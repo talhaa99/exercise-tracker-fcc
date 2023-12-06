@@ -26,7 +26,7 @@ const User = mongoose.model('User', userSchema);
 const logSchema = new mongoose.Schema({
     userId: mongoose.Schema.Types.ObjectId,
     description: String,
-    duration: String,
+    duration: Number,
     date: String,
 });
 
@@ -68,9 +68,25 @@ app.post('/api/users/:_id/exercises', async (req, res) => {
 app.get('/api/users/:_id/logs', async (req, res) => {
 
     let userId = req.params._id;
+    let {from, to, limit} = req.query;
+
+    const query = {userId};
+
+    if (from && to) {
+        from = new Date(from);
+        to = new Date(to);
+
+        query.date = {$gte: from, $lt: to};
+    }
+
+    limit = limit ? parseInt(limit) : undefined;
+
+    if (limit) {
+        query.limit = limit;
+    }
 
     const user = await User.findOne({_id: userId}).lean();
-    const data = await Log.find({userId}).lean();
+    const data = await Log.find(query).lean();
 
     user.count = data.length;
     user.log = data;
