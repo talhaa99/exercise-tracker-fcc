@@ -52,6 +52,7 @@ app.post('/api/users/:_id/exercises', async (req, res) => {
 
     let userId = req.params._id;
     let {description, duration, date} = req.body;
+    duration = parseInt(duration);
 
     if (!date) {
         date = new Date().toDateString();
@@ -62,7 +63,7 @@ app.post('/api/users/:_id/exercises', async (req, res) => {
     const user = await User.findOne({_id: userId});
     await Log.create({userId, description, duration, date});
 
-    res.json({_id: userId, username: user.username, description, duration, date});
+    res.json({username: user.username, description, duration, date, _id: userId});
 });
 
 app.get('/api/users/:_id/logs', async (req, res) => {
