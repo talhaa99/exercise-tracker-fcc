@@ -27,7 +27,7 @@ const logSchema = new mongoose.Schema({
     userId: mongoose.Schema.Types.ObjectId,
     description: String,
     duration: Number,
-    date: String,
+    date: Date,
 });
 
 const Log = mongoose.model('Log', logSchema);
@@ -73,23 +73,20 @@ app.get('/api/users/:_id/logs', async (req, res) => {
     const query = {userId};
 
     if (from && to) {
-        from = new Date(from);
-        to = new Date(to);
+        from = new Date(from).toISOString().split('T')[0];
+        to = new Date(to).toISOString().split('T')[0];
 
         query.date = {$gte: from, $lt: to};
     }
 
     limit = limit ? parseInt(limit) : undefined;
 
-    if (limit) {
-        query.limit = limit;
-    }
-
     const user = await User.findOne({_id: userId}).lean();
-    const data = await Log.find(query).lean();
+    const data = await Log.find(query).limit(limit).lean();
+    const newData = data.map(log => ({...log, date: (new Date(log.date)).toDateString()}))
 
-    user.count = data.length;
-    user.log = data;
+    user.count = newData.length;
+    user.log = newData;
 
     res.json(user);
 });
