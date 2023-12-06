@@ -18,15 +18,19 @@ app.get('/', (req, res) => {
 mongoose.connect(process.env.MONGO_URI);
 
 const userSchema = new mongoose.Schema({
-    username: String,
-    logs: [{
-        description: String,
-        duration: String,
-        date: String,
-    }]
+    username: String
 });
 
 const User = mongoose.model('User', userSchema);
+
+const logSchema = new mongoose.Schema({
+    userId: mongoose.Schema.Types.ObjectId,
+    description: String,
+    duration: String,
+    date: String,
+});
+
+const Log = mongoose.model('Log', logSchema);
 
 app.post('/api/users', async (req, res) => {
 
@@ -51,13 +55,28 @@ app.post('/api/users/:_id/exercises', async (req, res) => {
 
     if (!date) {
         date = new Date().toDateString();
+    } else {
+        date = new Date(date).toDateString();
     }
 
-    const data = await User.findByIdAndUpdate(userId, {$push: {logs: {description, duration, date}}}, {new: true});
+    const user = await User.findOne({_id: userId});
+    await Log.create({userId, description, duration, date});
 
-    res.json(data);
+    res.json({_id: userId, username: user.username, description, duration, date});
 });
 
+app.get('/api/users/:_id/logs', async (req, res) => {
+
+    let userId = req.params._id;
+
+    const user = await User.findOne({_id: userId}).lean();
+    const data = await Log.find({userId}).lean();
+
+    user.count = data.length;
+    user.log = data;
+
+    res.json(user);
+});
 
 const listener = app.listen(process.env.PORT || 3000, () => {
     console.log('Your app is listening on port ' + listener.address().port)
