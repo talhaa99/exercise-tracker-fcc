@@ -18,7 +18,12 @@ app.get('/', (req, res) => {
 mongoose.connect(process.env.MONGO_URI);
 
 const userSchema = new mongoose.Schema({
-    username: String
+    username: String,
+    logs: [{
+        description: String,
+        duration: String,
+        date: String,
+    }]
 });
 
 const User = mongoose.model('User', userSchema);
@@ -39,6 +44,19 @@ app.get('/api/users', async (req, res) => {
     res.json(data);
 });
 
+app.post('/api/users/:_id/exercises', async (req, res) => {
+
+    let userId = req.params._id;
+    let {description, duration, date} = req.body;
+
+    if (!date) {
+        date = new Date().toDateString();
+    }
+
+    const data = await User.findByIdAndUpdate(userId, {$push: {logs: {description, duration, date}}}, {new: true});
+
+    res.json(data);
+});
 
 
 const listener = app.listen(process.env.PORT || 3000, () => {
